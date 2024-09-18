@@ -12,7 +12,7 @@ as these will be graded automatically.
 """
 
 import torch
-import numpy as np
+import math
 
 
 ##Problem 1. (1 pt)
@@ -84,7 +84,7 @@ def calculate_tensor_sum(x):
     #################################YOUR CODE###################################
     # Replace "pass" statement with your code
 
-    reuslt = torch.sum(x)
+    result = torch.sum(x)
 
     #############################################################################
     return result
@@ -114,8 +114,7 @@ def count_tensor_elements(x):
     #############################################################################
     # Replace "pass" statement with your code
 
-    x = x.numpy()
-    num_elements = x.size
+    num_elements = math.prod(x.shape)
 
     #############################################################################
     #                            END OF YOUR CODE                               #
@@ -364,10 +363,10 @@ def zero_min_in_each_row(x):
     # Replace "pass" statement with your code
 
     result = x.clone()
-    indices = torch.argmin(x, dim=1)
+    min_vals = torch.min(x, dim=1, keepdim=True)[0]
 
-    for row, col in enumerate(indices):
-        result[row, col] = 0
+    # 브로드캐스팅 개념 참고
+    result[result == min_vals] = 0
 
     #############################################################################
     #                            END OF YOUR CODE                               #
