@@ -33,9 +33,7 @@ def create_sample_tensor():
     #############################################################################
     # Replace "pass" statement with your code
 
-    x = torch.zeros(2, 3)
-    x[0, 1] = 10
-    x[1, 0] = 100
+    x = torch.tensor([[0, 10, 0], [100, 0, 0]])
 
     #############################################################################
     #                            END OF YOUR CODE                               #
@@ -333,11 +331,9 @@ def reshape_practice_v2(x):
     #############################################################################
     # Replace "pass" statement with your code
 
-    a = torch.reshape(x[:12], (4, 3))
-    b = torch.reshape(x[12:24], (4, 3))
-    c = torch.reshape(x[24:], (4, 3))
-
-    y = torch.cat([a, b, c], dim=1)
+    seq1 = x.view(3, 4, 3)
+    seq2 = seq1.permute(1, 0, 2)
+    y = seq2.reshape(4, 9)
 
     #############################################################################
     #                            END OF YOUR CODE                               #
@@ -364,8 +360,6 @@ def zero_min_in_each_row(x):
 
     result = x.clone()
     min_vals = torch.min(x, dim=1, keepdim=True)[0]
-
-    # 브로드캐스팅 개념 참고
     result[result == min_vals] = 0
 
     #############################################################################
@@ -396,14 +390,14 @@ def batch_matrix_multiply(x, y, use_loop=True):
     #############################################################################
     # Replace "pass" statement with your code
 
-    # TODO: result를 list로 잡고 한 번에 쌓아서 stack하는게 더 효율적?
-
     if use_loop:
-        for b in range(x.shape[0]):
-            if b == 0:
-                result = torch.matmul(x[b], y[b])
-            else:
-                result = torch.stack([result, torch.matmul(x[b], y[b])], dim=0)
+        B, N, M = x.shape
+        _, _, P = y.shape
+
+        result = torch.empty((B, N, P))
+
+        for b in range(B):
+            result[b] = torch.matmul(x[b], y[b])
 
     else:
         result = torch.bmm(x, y)
@@ -452,18 +446,17 @@ def gpu_matrix_multiplication(x, w):
     #############################################################################
     # Replace "pass" statement with your code
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    x_gpu = x.to(device)
-    # print(x_gpu.device)
-    w_gpu = w.to(device)
-    # print(w_gpu.device)
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        x_gpu = x.to(device)
+        w_gpu = w.to(device)
 
-    result_gpu = torch.mm(x_gpu, w_gpu)
-    # print(result_gpu.device)
+        result_gpu = torch.mm(x_gpu, w_gpu)
 
-    result = result_gpu.cpu()
-    # print(result.device)
+        result = result_gpu.cpu()
 
+    else:
+        raise RuntimeError("CUDA isn't available")
     #############################################################################
     #                            END OF YOUR CODE                               #
     #############################################################################
