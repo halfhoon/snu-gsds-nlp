@@ -65,6 +65,15 @@ def naiveSoftmaxLossAndGradient(
     ### This numerically stable implementation helps you avoid issues pertaining
     ### to integer overflow. 
 
+    y_hat = softmax(outsideVectors.dot(centerWordVec))
+    loss = -np.log(y_hat[outsideWordIdx])
+
+    y = np.zeros(y_hat.shape)
+    y[outsideWordIdx] = 1
+    gradCenterVec = (y_hat - y).dot(outsideVectors)
+    gradOutsideVecs = (y_hat - y).reshape(-1, 1).dot(centerWordVec.reshape(1, -1))
+
+
     ### END YOUR CODE
 
     return loss, gradCenterVec, gradOutsideVecs
@@ -109,8 +118,25 @@ def negSamplingLossAndGradient(
     # wish to match the autograder and receive points!
     negSampleWordIndices = getNegativeSamples(outsideWordIdx, dataset, K)
     indices = [outsideWordIdx] + negSampleWordIndices
+    
     ### YOUR CODE HERE (~10 Lines)
-
+    indices = [idx for idx in indices if idx < outsideVectors.shape[0]]
+    
+    labels = np.array([1] + [-1] * (len(indices) - 1))
+    
+    vecs = outsideVectors[indices]
+    
+    dot_products = np.dot(vecs, centerWordVec)
+    
+    sigmoid_values = sigmoid(dot_products)
+    
+    loss = -np.sum(np.log(sigmoid(labels * dot_products)))
+    
+    grad_mult = labels * (sigmoid_values - 1)
+    gradCenterVec = np.dot(grad_mult, vecs)
+    gradOutsideVecs = np.zeros_like(outsideVectors)
+    
+    np.add.at(gradOutsideVecs, indices, np.outer(grad_mult, centerWordVec))
 
 
     ### END YOUR CODE

@@ -152,6 +152,7 @@ class RTE_dataset:
                     freq = 1.0 * self._tokenfreq[w] 
                     ## ToDo: Reweigh the frequency by taking 0.75th power of frequncy. (1 line)
                     #######Your Code#######
+                    freq = freq ** 0.75
                     ##
                 else: # if w is not in token frequency dict
                     freq = 0.0
@@ -170,5 +171,6 @@ class RTE_dataset:
         ## ToDo: Sample K indices according to tmpSamplingFreq (1~2lines) (hint: you can use np.random.choice)
         idx = None
         #######Your Code#######
+        idx = np.random.choice(len(tmpSamplingFreq), size=K, replace=False, p=tmpSamplingFreq)
         ##
         return idx

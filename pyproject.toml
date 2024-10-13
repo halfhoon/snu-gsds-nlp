@@ -18,6 +18,8 @@ torch = {version = "^2.4.0+cu121", source = "pytorch-gpu"}
 torchvision = {version = "^0.19.0+cu121", source = "pytorch-gpu"}
 torchaudio = {version = "^2.4.0+cu121", source = "pytorch-gpu"}
 scikit-learn = "^1.5.2"
+nltk = "^3.9.1"
+gensim = "^4.3.3"
 
 
 [[tool.poetry.source]]
