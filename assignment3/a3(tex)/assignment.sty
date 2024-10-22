@@ -1,0 +1,20 @@
+% --- Identification part ---
+\ProvidesPackage{assignment format}
+\usepackage{url}
+% --- Declaration of options ---
+\DeclareOption{english}{%
+  \PassOptionsToPackage{english}{babel}
+  \EinheitName{ }
+  \EinheitInfo{Graduate School of Data Science \\ Seoul National University}
+  \PersonName{Instructor: Jay-yoon Lee (lee.jayyoon@snu.ac.kr) \\ TA: Hye Won Jeon (pingpong0926@snu.ac.kr)}
+  \Kurstitel{M3224.000300 Natural Language Processing with Neural Networks}
+  \Semester{Fall 2024}
+}
+
+% --- Execution of options ---
+\ExecuteOptions{english}   % set default
+\ProcessOptions
+
+% --- Package loading
+\RequirePackage{babel}
+
