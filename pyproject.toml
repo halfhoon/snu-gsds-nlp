@@ -20,6 +20,8 @@ torchaudio = {version = "^2.4.0+cu121", source = "pytorch-gpu"}
 scikit-learn = "^1.5.2"
 nltk = "^3.9.1"
 gensim = "^4.3.3"
+docopt = "^0.6.2"
+sentencepiece = "^0.2.0"
 
 
 [[tool.poetry.source]]

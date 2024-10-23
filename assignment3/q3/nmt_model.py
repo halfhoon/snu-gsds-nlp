@@ -68,6 +68,16 @@ class NMT(nn.Module):
         ###     Dropout Layer:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Dropout
 
+        self.encoder = nn.LSTM(embed_size, hidden_size, bidirectional=True)
+        self.decoder = LSTMCell_assignment(embed_size + hidden_size, hidden_size, bias=True)
+        self.h_projection = nn.Linear(hidden_size * 2, hidden_size, bias=False)
+        self.c_projection = nn.Linear(hidden_size * 2, hidden_size, bias=False)
+        self.att_projection = nn.Linear(hidden_size * 2, hidden_size, bias=False)
+        self.combined_output_projection = nn.Linear(hidden_size * 3, hidden_size, bias=False)
+        self.target_vocab_projection = nn.Linear(hidden_size, len(self.vocab.src), bias=False)
+        self.dropout = nn.Dropout(dropout_rate)
+
+        
         ### END OF YOUR CODE
 
 
