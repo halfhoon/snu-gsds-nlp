@@ -139,23 +139,37 @@ class NMT(nn.Module):
         ###     1. Construct Tensor `X` of source sentences with shape (src_len, b, e) using the source model embeddings.
         ###         src_len = maximum source sentence length, b = batch size, e = embedding size. Note
         ###         that there is no initial hidden state or cell for the decoder.
+        X = self.model_embeddings.source(source_padded)     #(src_len, b, e)
         ###     2. Compute `enc_hiddens`, `last_hidden`, `last_cell` by applying the encoder to `X`.
         ###         - Before you can apply the encoder, you need to apply the `pack_padded_sequence` function to X.
         ###         - After you apply the encoder, you need to apply the `pad_packed_sequence` function to enc_hiddens.
         ###         - Note that the shape of the tensor returned by the encoder is (src_len, b, h*2) and we want to
         ###           return a tensor of shape (b, src_len, h*2) as `enc_hiddens`.
+        
+        packed = pack_padded_sequence(X, source_lengths)
+        encoded, (last_hidden, last_cell) = self.encoder(packed) # (scr_len, b, h*2)
+        encoded, _ = pad_packed_sequence(encoded)
+        enc_hiddens = encoded.permute(1, 0, 2) #(b, src_len, h*2)
+        
         ###     3. Compute `dec_init_state` = (init_decoder_hidden, init_decoder_cell):
         ###         - `init_decoder_hidden`:
         ###             `last_hidden` is a tensor shape (2, b, h). The first dimension corre onds to forwards and backwards.
         ###             Concatenate the forwards and backwards tensors to obtain a tensor shape (b, 2*h).
         ###             Apply the h_projection layer to this in order to compute init_decoder_hidden.
         ###             This is h_0^{dec} in the PDF. Here b = batch size, h = hidden size
+        
+        concated_hiddnen = torch.cat((last_hidden[0], last_hidden[1]), dim=1) # (b, 2*h)
+        init_decoder_hidden = self.h_projection(concated_hiddnen)
+        
         ###         - `init_decoder_cell`:
         ###             `last_cell` is a tensor shape (2, b, h). The first dimension corresponds to forwards and backwards.
         ###             Concatenate the forwards and backwards tensors to obtain a tensor shape (b, 2*h).
         ###             Apply the c_projection layer to this in order to compute init_decoder_cell.
         ###             This is c_0^{dec} in the PDF. Here b = batch size, h = hidden size
         ###
+        concated_cell = torch.cat((last_cell[0], last_cell[1]), dim=1) # (b, 2*h)
+        init_decoder_cell = self.c_projection(concated_cell)
+        dec_init_state = (init_decoder_hidden, init_decoder_cell)
         ### See the following docs, as you may need to use some of the following functions in your implementation:
         ###     Pack the padded sequence X before passing to the encoder:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.utils.rnn.pack_padded_sequence
@@ -205,8 +219,14 @@ class NMT(nn.Module):
         ###         which should be shape (b, src_len, h),
         ###         where b = batch size, src_len = maximum source length, h = hidden size.
         ###         This is applying W_{attProj} to h^enc, as described in the PDF.
+        
+        enc_hiddens_proj = self.att_projection(enc_hiddens)
+        
         ###     2. Construct tensor `Y` of target sentences with shape (tgt_len, b, e) using the target model embeddings.
         ###         where tgt_len = maximum target sentence length, b = batch size, e = embedding size.
+        
+        Y = self.model_embeddings.target(target_padded)
+        
         ###     3. Use the torch.split function to iterate over the time dimension of Y.
         ###         Within the loop, this will give you Y_t of shape (1, b, e) where b = batch size, e = embedding size.
         ###             - Squeeze Y_t into a tensor of dimension (b, e). 
@@ -215,9 +235,19 @@ class NMT(nn.Module):
         ###               as well as the new combined output o_t.
         ###             - Append o_t to combined_outputs
         ###             - Update o_prev to the new o_t.
+        
+        for Y_t in torch.split(Y, 1):
+            Y_t = torch.squeeze(Y_t, dim=0)
+            Ybar_t = torch.cat((Y_t, o_prev), 1) #y_t shape : (b, e)
+            dec_state, o_t, _ = self.step(Ybar_t, dec_state, enc_hiddens, enc_hiddens_proj, enc_masks)
+            combined_outputs.append(o_t)
+            o_prev = o_t
+            
         ###     4. Use torch.stack to convert combined_outputs from a list length tgt_len of
         ###         tensors shape (b, h), to a single tensor shape (tgt_len, b, h)
         ###         where tgt_len = maximum target sentence length, b = batch size, h = hidden size.
+       
+        combined_outputs = torch.stack(combined_outputs)
         ###
         ### Note:
         ###    - When using the squeeze() function make sure to specify the dimension you want to squeeze
@@ -275,7 +305,11 @@ class NMT(nn.Module):
         ###     2. Split dec_state into its two parts (dec_hidden, dec_cell)
         ###     3. Compute the attention scores e_t, a Tensor shape (b, src_len). 
         ###        Note: b = batch_size, src_len = maximum source length, h = hidden size.
-        ###
+        
+        dec_state = self.decoder(Ybar_t, dec_state)   # (h, c)
+        dec_hidden, dec_cell = dec_state[0], dec_state[1]
+        e_t = torch.squeeze(torch.bmm(dec_hidden.unsqueeze(1), enc_hiddens_proj.permute(0, 2, 1)), dim=1)  # (b, 1, h) * (b, h, src_len) => (b, 1, src_len)
+        
         ###       Hints:
         ###         - dec_hidden is shape (b, h) and corresponds to h^dec_t in the PDF (batched)
         ###         - enc_hiddens_proj is shape (b, src_len, h) and corresponds to W_{attProj} h^enc (batched).
