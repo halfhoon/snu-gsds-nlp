@@ -3,3 +3,5 @@ __pycache__/
 snu_nlp/
 test.ipynb
 *.zip
+model.bin
+model.bin.optim
